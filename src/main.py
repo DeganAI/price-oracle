@@ -10,6 +10,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -112,6 +113,118 @@ class PriceResponse(BaseModel):
 
 
 # API Endpoints
+@app.get("/", response_class=HTMLResponse)
+async def landing_page():
+    """Landing page with metadata"""
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Oracle</title>
+    <meta property="og:title" content="Price Oracle">
+    <meta property="og:description" content="Multi-chain token price feeds via x402 micropayments">
+    <meta property="og:image" content="https://price-oracle-production-9e7c.up.railway.app/favicon.ico">
+    <link rel="icon" href="/favicon.ico" type="image/svg+xml">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { color: #333; }
+        .endpoint { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>💰 Price Oracle</h1>
+    <p>Multi-chain token price feeds via x402 micropayments</p>
+    <div class="endpoint">
+        <strong>Main Endpoint:</strong> <code>POST /entrypoints/price-oracle/invoke</code>
+    </div>
+    <div class="endpoint">
+        <strong>Documentation:</strong> <a href="/docs">/docs</a>
+    </div>
+    <div class="endpoint">
+        <strong>x402 Metadata:</strong> <a href="/.well-known/x402">/.well-known/x402</a>
+    </div>
+</body>
+</html>"""
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Favicon endpoint returning SVG with emoji"""
+    svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <text y="80" font-size="80">💰</text>
+</svg>"""
+    return Response(content=svg, media_type="image/svg+xml")
+
+
+@app.get("/entrypoints/price-oracle/invoke")
+async def price_oracle_get():
+    """GET endpoint returning HTTP 402 with x402 metadata"""
+    headers = {
+        "X-Accepts-Payment": "x402",
+        "X-Payment-Network": "base",
+        "X-Payment-Asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "X-Payment-Amount": "10000",
+        "X-Payment-Address": payment_address,
+        "X-Facilitator-Url": "https://facilitator.daydreams.systems"
+    }
+
+    metadata = {
+        "x402Version": 1,
+        "scheme": "exact",
+        "network": "base",
+        "maxAmountRequired": "10000",
+        "resource": f"{base_url}/entrypoints/price-oracle/invoke",
+        "description": "Real-time token price with multi-source aggregation and confidence scoring",
+        "mimeType": "application/json",
+        "payTo": payment_address,
+        "maxTimeoutSeconds": 15,
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "outputSchema": {
+            "input": {
+                "type": "http",
+                "method": "POST",
+                "bodyType": "json",
+                "bodyFields": {
+                    "token_address": {
+                        "type": "string",
+                        "required": True,
+                        "description": "Token contract address"
+                    },
+                    "chain_id": {
+                        "type": "number",
+                        "required": False,
+                        "description": "Blockchain ID (default: 1 = Ethereum)"
+                    },
+                    "vs_currency": {
+                        "type": "string",
+                        "required": False,
+                        "description": "Currency to price against (default: usd)"
+                    }
+                }
+            },
+            "output": {
+                "type": "object",
+                "description": "Token price data with confidence scoring and multi-source aggregation"
+            }
+        }
+    }
+
+    return Response(
+        content=str(metadata),
+        status_code=402,
+        headers=headers,
+        media_type="application/json"
+    )
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""
