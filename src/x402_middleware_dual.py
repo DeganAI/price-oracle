@@ -153,13 +153,41 @@ class X402Middleware(BaseHTTPMiddleware):
                 {
                     "scheme": "exact",
                     "network": "base",
-                    "maxAmountRequired": "50000",  # 0.05 USDC (6 decimals)
+                    "maxAmountRequired": "10000",  # 0.01 USDC (6 decimals)
                     "resource": resource_url,
                     "description": description,
                     "mimeType": "application/json",
                     "payTo": self.payment_address,
                     "maxTimeoutSeconds": 30,
                     "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",  # USDC on Base
+                    "outputSchema": {
+                        "input": {
+                            "type": "http",
+                            "method": "POST",
+                            "bodyType": "json",
+                            "bodyFields": {
+                                "token_address": {
+                                    "type": "string",
+                                    "required": True,
+                                    "description": "Token contract address"
+                                },
+                                "chain_id": {
+                                    "type": "number",
+                                    "required": False,
+                                    "description": "Blockchain ID (default: 1 = Ethereum)"
+                                },
+                                "vs_currency": {
+                                    "type": "string",
+                                    "required": False,
+                                    "description": "Currency to price against (default: usd)"
+                                }
+                            }
+                        },
+                        "output": {
+                            "type": "object",
+                            "description": "Token price data with confidence scoring and multi-source aggregation"
+                        }
+                    }
                 }
             ]
         }
@@ -204,7 +232,7 @@ class X402Middleware(BaseHTTPMiddleware):
         is_valid, error_message = await self.verify_payment(
             payment_header=payment_header,
             resource_url=str(request.url),
-            amount_required="50000"  # 0.05 USDC
+            amount_required="10000"  # 0.01 USDC
         )
 
         if not is_valid:
@@ -218,13 +246,41 @@ class X402Middleware(BaseHTTPMiddleware):
                     "accepts": [{
                         "scheme": "exact",
                         "network": "base",
-                        "maxAmountRequired": "50000",
+                        "maxAmountRequired": "10000",
                         "resource": str(request.url),
                         "description": "Payment required to access this resource",
                         "mimeType": "application/json",
                         "payTo": self.payment_address,
                         "maxTimeoutSeconds": 30,
                         "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                        "outputSchema": {
+                            "input": {
+                                "type": "http",
+                                "method": "POST",
+                                "bodyType": "json",
+                                "bodyFields": {
+                                    "token_address": {
+                                        "type": "string",
+                                        "required": True,
+                                        "description": "Token contract address"
+                                    },
+                                    "chain_id": {
+                                        "type": "number",
+                                        "required": False,
+                                        "description": "Blockchain ID (default: 1 = Ethereum)"
+                                    },
+                                    "vs_currency": {
+                                        "type": "string",
+                                        "required": False,
+                                        "description": "Currency to price against (default: usd)"
+                                    }
+                                }
+                            },
+                            "output": {
+                                "type": "object",
+                                "description": "Token price data with confidence scoring and multi-source aggregation"
+                            }
+                        }
                     }]
                 }
             )
